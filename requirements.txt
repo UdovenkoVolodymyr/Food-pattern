@@ -1,0 +1,5 @@
+ipython
+pandas
+nltk
+googletrans
+re
