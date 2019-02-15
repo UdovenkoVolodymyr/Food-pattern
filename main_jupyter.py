@@ -201,5 +201,5 @@ def main():
                                         line_tokens)
             row_food += line_result
         data['food_entity'][index] = row_food
-    data.drop(['coma_separate', 'english'], axis=1, inplace=True)
+    data.drop(['coma_separate'], axis=1, inplace=True)
     display(HTML(data.to_html().replace("\\n", "<br>")))
