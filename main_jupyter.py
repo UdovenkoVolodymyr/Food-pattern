@@ -2,12 +2,22 @@ def main():
     import pandas as pd
     from googletrans import Translator
     import nltk
+    import spacy
     import re
+    from word2number import w2n
     from IPython.display import display, HTML
+    from spacy import displacy
     pd.set_option('display.max_columns', 7)
     pd.set_option('display.max_rows', 1000)
     pd.options.display.max_colwidth = 1000
     pd.options.mode.chained_assignment = None
+
+
+    colors = {'FOOD': 'linear-gradient(90deg, #aa9cfc, #fc9ce7)',
+              'VOLVAL': 'linear-gradient(180deg, #f920eb, #4957ed)',
+              'VOLENT': 'linear-gradient(90deg, #72db4c, #17ecef)',
+              'QUA': 'linear-gradient(45deg, #0050ff, #fff600)'}
+    options = {'ents': ['FOOD', 'QUA', 'VOLVAL', 'VOLENT'], 'colors': colors}
 
     def re_pattern_finder(pattern, in_str, result_list):
         result = re.findall(pattern, in_str)
@@ -177,6 +187,7 @@ def main():
         tare_food_dict[row.tare] = row.capacity
 
     translator = Translator()
+    nlp = spacy.load('food_ner')
 
     columns = ['Raw_text', 'english', 'coma_separate', 'food_entity']
     data = pd.read_csv('food_test.csv', delimiter='\n', names=columns)
@@ -187,7 +198,14 @@ def main():
         data['english'][index] = english_str
         data['coma_separate'][index] = english_str.split(',')
         for coma_lines in data.coma_separate[index]:
-            line_tokens = nltk.word_tokenize(coma_lines)
+            line_tokens = list()
+            line_tokens_raw = nltk.word_tokenize(coma_lines)
+            for token in line_tokens_raw:
+                try:
+                    clear_token = w2n.word_to_num(token)
+                    line_tokens.append(str(clear_token))
+                except ValueError:
+                    line_tokens.append(token)
 
             food_list = food_entity_detect(line_tokens, all_food_list)
             capacity_list = capacity_detect(line_tokens)
@@ -201,5 +219,10 @@ def main():
                                         line_tokens)
             row_food += line_result
         data['food_entity'][index] = row_food
+
+        doc = nlp(english_str)
+        displacy.render(doc, style='ent', jupyter=True, options=options)
+
     data.drop(['coma_separate'], axis=1, inplace=True)
+    # data.style.set_properties(**{'font-size':'20pt'})
     display(HTML(data.to_html().replace("\\n", "<br>")))
